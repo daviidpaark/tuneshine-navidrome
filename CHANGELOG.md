@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.3] - 2026-09-10
+
+### Changed
+
+- **Operation Mode Labels:** Standardized the Navidrome settings labels to `Direct to Device` and `Tuneshine Hub` so they match the Tuneshine ecosystem terminology.
+
 ## [0.4.2] - 2026-08-26
 
 ### Fixed

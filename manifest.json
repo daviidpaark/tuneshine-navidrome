@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/navidrome/navidrome/refs/heads/master/plugins/manifest-schema.json",
   "name": "Tuneshine",
   "author": "daviidpaark",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "description": "Sends album art and track metadata to a Tuneshine device or Tuneshine Hub",
   "permissions": {
     "users": {
