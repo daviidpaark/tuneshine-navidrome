@@ -36,11 +36,11 @@
           "oneOf": [
             {
               "const": "direct",
-              "title": "Direct to Device (Standalone)"
+              "title": "Direct to Device"
             },
             {
               "const": "hub",
-              "title": "Tuneshine Hub (Offload Processing)"
+              "title": "Tuneshine Hub"
             }
           ]
         },

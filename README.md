@@ -18,10 +18,10 @@ A [Navidrome](https://www.navidrome.org/) plugin that sends album art and track 
 
 ## Features
 
-- **Dual Operation Modes:**
-  - **Direct to Device (Standalone):** Full standalone mode where Navidrome handles 64×64 lossless WebP conversion and debouncing directly for physical Tuneshine hardware.
-  - **Tuneshine Hub (Offload Processing):** Ultra-lightweight forwarder mode where Navidrome passes raw cover art and metadata to a `tuneshine-hub` Docker container, completely offloading WebP compression and debounce timers to the server.
-- Displays 64×64 album art on the Tuneshine device when a track starts playing
+- **Two Operation Modes:**
+  - **Direct to Device:** Navidrome handles 64x64 lossless WebP conversion and debouncing, then sends updates directly to a physical Tuneshine device.
+  - **Tuneshine Hub:** Navidrome forwards raw cover art and metadata to a `tuneshine-hub` container, which handles image processing, debouncing, and multi-source coordination.
+- Displays 64x64 album art on the Tuneshine device when a track starts playing
 - Sends artist and album name as metadata
 - Clears the display when paused, stopped, or expired — with debounced handling to prevent screen flickering during seeks and track transitions
 - Deduplicates requests for the same track or identical cover art
@@ -33,8 +33,8 @@ A [Navidrome](https://www.navidrome.org/) plugin that sends album art and track 
 
 | Mode | Target | Description |
 | :--- | :--- | :--- |
-| **`Direct to Device`** *(Default)* | Physical Tuneshine (e.g. `192.168.1.100` or `tuneshine.local`) | Converts cover art to 64×64 lossless WebP in WASM and speaks directly to the Tuneshine hardware. Uses Navidrome scheduler to debounce screen clearing during seeks. |
-| **`Tuneshine Hub`** | Tuneshine Hub (e.g. `tuneshine-hub:8585` or `<hub-ip>:8585`) | Forwards raw cover art and playback events directly to the Hub. The Hub handles Pillow image downscaling, WebP compression, debounce timers, and Spotify fallback. |
+| **`Direct to Device`** *(Default)* | Physical Tuneshine device (e.g. `192.168.1.100` or `tuneshine.local`) | Converts cover art to 64x64 lossless WebP in WASM and sends it directly to the device. Uses Navidrome scheduler to debounce screen clearing during seeks. |
+| **`Tuneshine Hub`** | Tuneshine Hub (e.g. `tuneshine-hub:8585` or `<hub-ip>:8585`) | Forwards raw cover art and playback events to Hub. Hub handles image processing, debounce timers, Spotify fallback, and multi-source coordination. |
 
 ---
 
@@ -51,7 +51,7 @@ A [Navidrome](https://www.navidrome.org/) plugin that sends album art and track 
 2. Place it in your Navidrome plugins directory (e.g. `/data/plugins/`)
 3. Go to **Settings → Plugins** and click **Rescan** to detect the plugin
 4. Go to **Settings → Plugins → Tuneshine** and configure:
-   - **Operation Mode** — Choose `Direct to Device (Standalone)` or `Tuneshine Hub (Offload Processing)`
+  - **Operation Mode** — Choose `Direct to Device` or `Tuneshine Hub`
    - **Target Host** — IP address or hostname of your physical Tuneshine (e.g. `192.168.1.100` or `tuneshine.local`) or Tuneshine Hub (e.g. `tuneshine-hub:8585` or `<hub-ip>:8585`)
    - **Service Name** — Label shown on the Tuneshine display (default: `Navidrome`)
    - **Restrict to User(s)** — Optional. Only show playback from these usernames (e.g. `user1` or `user1,user2`). Leave blank for all users.
