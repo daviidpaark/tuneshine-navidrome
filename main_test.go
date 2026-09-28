@@ -117,7 +117,7 @@ func TestNowPlaying(t *testing.T) {
 	host.CacheMock.On("SetString", cacheKeyLastTrack, "track-123", int64(cacheTTLSeconds)).Return(nil)
 
 	testImg := createTestPNG(64, 64)
-	host.SubsonicAPIMock.On("CallRaw", "/getCoverArt?u=okiseme&id=track-123&size=300").
+	host.SubsonicAPIMock.On("CallRaw", "/getCoverArt?u=test+user%26name&id=track-123&size=300").
 		Return("image/png", testImg, nil)
 
 	host.HTTPMock.On("Send", mock.MatchedBy(func(req host.HTTPRequest) bool {
@@ -125,7 +125,7 @@ func TestNowPlaying(t *testing.T) {
 	})).Return(&host.HTTPResponse{StatusCode: 200}, nil)
 
 	req := scrobbler.NowPlayingRequest{
-		Username: "okiseme",
+		Username: "test user&name",
 		Track: scrobbler.TrackInfo{
 			ID:     "track-123",
 			Title:  "Organon",
@@ -162,7 +162,7 @@ func TestPlaybackReport_ExpiredDifferentTrackIgnored(t *testing.T) {
 
 	// An expired event arrives for an OLD session playing track-old
 	req := scrobbler.PlaybackReportRequest{
-		Username: "okiseme",
+		Username: "user",
 		Track: scrobbler.TrackInfo{
 			ID: "track-old",
 		},
@@ -196,7 +196,7 @@ func TestPlaybackReport_ExpiredEmptyTrackIgnored(t *testing.T) {
 
 	// A generic disconnect event arrives with NO track ID
 	req := scrobbler.PlaybackReportRequest{
-		Username: "okiseme",
+		Username: "user",
 		Track:    scrobbler.TrackInfo{},
 		State:    "expired",
 	}
@@ -231,7 +231,7 @@ func TestPlaybackReport_PausedCurrentTrackSchedulesClear(t *testing.T) {
 
 	// User pauses the CURRENT track
 	req := scrobbler.PlaybackReportRequest{
-		Username: "okiseme",
+		Username: "user",
 		Track: scrobbler.TrackInfo{
 			ID: "track-active",
 		},
@@ -268,7 +268,7 @@ func TestNowPlaying_Deduplication(t *testing.T) {
 	host.CacheMock.On("GetString", cacheKeyLastTrack).Return("track-123", true, nil)
 
 	req := scrobbler.NowPlayingRequest{
-		Username: "okiseme",
+		Username: "user",
 		Track: scrobbler.TrackInfo{
 			ID:     "track-123",
 			Title:  "Organon",

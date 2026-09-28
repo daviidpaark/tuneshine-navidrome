@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.4] - 2026-09-28
+
+### Fixed
+
+- **Cover Art Username Escaping:** The username in the `getCoverArt` Subsonic call is now URL-encoded, so names with spaces, `&`, or `+` fetch artwork correctly.
+
 ## [0.4.3] - 2026-09-10
 
 ### Changed
