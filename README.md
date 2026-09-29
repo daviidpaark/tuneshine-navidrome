@@ -1,5 +1,7 @@
 # Tuneshine Plugin for Navidrome
 
+[![CI](https://github.com/daviidpaark/tuneshine-navidrome/actions/workflows/ci.yml/badge.svg)](https://github.com/daviidpaark/tuneshine-navidrome/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/daviidpaark/tuneshine-navidrome)](https://github.com/daviidpaark/tuneshine-navidrome/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Navidrome](https://img.shields.io/badge/Navidrome-Plugin-blue.svg)](https://www.navidrome.org/)
 [![Go 1.25](https://img.shields.io/badge/Go-1.25-blue.svg)](https://golang.org/)
@@ -51,7 +53,7 @@ A [Navidrome](https://www.navidrome.org/) plugin that sends album art and track 
 2. Place it in your Navidrome plugins directory (e.g. `/data/plugins/`)
 3. Go to **Settings → Plugins** and click **Rescan** to detect the plugin
 4. Go to **Settings → Plugins → Tuneshine** and configure:
-  - **Operation Mode** — Choose `Direct to Device` or `Tuneshine Hub`
+   - **Operation Mode** — Choose `Direct to Device` or `Tuneshine Hub`
    - **Target Host** — IP address or hostname of your physical Tuneshine (e.g. `192.168.1.100` or `tuneshine.local`) or Tuneshine Hub (e.g. `tuneshine-hub:8585` or `<hub-ip>:8585`)
    - **Service Name** — Label shown on the Tuneshine display (default: `Navidrome`)
    - **Restrict to User(s)** — Optional. Only show playback from these usernames (e.g. `user1` or `user1,user2`). Leave blank for all users.
@@ -107,7 +109,7 @@ zip tuneshine.ndp plugin.wasm manifest.json
 ## AI Disclosure & Personal Project Note
 
 > [!NOTE]
-> This project was developed as a personal home lab tool with the assistance of **GitHub Copilot (Claude Sonnet / Opus)** and **Google Antigravity (Gemini Flash / Pro)** AI pair programming. It is shared publicly for the benefit of the community and other Tuneshine owners. Contributions, feedback, and issue reports are always welcome!
+> This project was developed as a personal home lab tool with the assistance of **GitHub Copilot (Claude Sonnet / Opus)**, **Google Antigravity (Gemini Flash / Pro)**, and **Claude Code (Claude Opus)** AI pair programming. It is shared publicly for the benefit of the community and other Tuneshine owners. Contributions, feedback, and issue reports are always welcome!
 
 ---
 
