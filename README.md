@@ -12,7 +12,7 @@ A [Navidrome](https://www.navidrome.org/) plugin that sends album art and track 
 
 ## The Tuneshine Ecosystem
 
-* **[tuneshine-navidrome](https://github.com/daviidpaark/tuneshine-navidrome)** *(This repository)*: Official Navidrome plugin. Streams live playback and cover art from your Navidrome music server to Tuneshine Hub (or directly to a physical Tuneshine device).
+* **[tuneshine-navidrome](https://github.com/daviidpaark/tuneshine-navidrome)** *(This repository)*: Navidrome plugin. Streams live playback and cover art from your Navidrome music server to Tuneshine Hub (or directly to a physical Tuneshine device).
 * **[tuneshine-windows](https://github.com/daviidpaark/tuneshine-windows)**: Standalone Windows System Tray desktop companion. Hooks into Windows Media Controls (SMTC) to capture and stream real-time playback from Spotify, Apple Music, YouTube, Tidal, and local players to Tuneshine Hub (or directly to a physical Tuneshine device).
 * **[tuneshine-hub](https://github.com/daviidpaark/tuneshine-hub)**: Central Docker hub service. Manages 24/7 background Spotify tracking, converts raw artwork to 64×64 WebP, arbitrates multi-source priority, and drives your physical Tuneshine device.
 
@@ -26,7 +26,7 @@ A [Navidrome](https://www.navidrome.org/) plugin that sends album art and track 
 - Displays 64x64 album art on the Tuneshine device when a track starts playing
 - Sends artist and album name as metadata
 - Clears the display when paused, stopped, or expired — with debounced handling to prevent screen flickering during seeks and track transitions
-- Deduplicates requests for the same track or identical cover art
+- Skips duplicate uploads when the same track is reported again
 - Works for all Navidrome users, with an optional allowlist to restrict which users update the display
 
 ---
@@ -36,7 +36,7 @@ A [Navidrome](https://www.navidrome.org/) plugin that sends album art and track 
 | Mode | Target | Description |
 | :--- | :--- | :--- |
 | **`Direct to Device`** *(Default)* | Physical Tuneshine device (e.g. `192.168.1.100` or `tuneshine.local`) | Converts cover art to 64x64 lossless WebP in WASM and sends it directly to the device. Uses Navidrome scheduler to debounce screen clearing during seeks. |
-| **`Tuneshine Hub`** | Tuneshine Hub (e.g. `tuneshine-hub:8585` or `<hub-ip>:8585`) | Forwards raw cover art and playback events to Hub. Hub handles image processing, debounce timers, Spotify fallback, and multi-source coordination. |
+| **`Tuneshine Hub`** | Tuneshine Hub (e.g. `tuneshine-hub:8585` or `<hub-ip>:8585`) | Forwards raw cover art and playback events to Hub. Hub handles image processing, Spotify fallback, and multi-source coordination. |
 
 ---
 
@@ -81,6 +81,12 @@ GOOS=wasip1 GOARCH=wasm go build -buildmode=c-shared -o plugin.wasm .
 tinygo build -target wasip1 -buildmode=c-shared -o plugin.wasm -scheduler=none .
 
 zip tuneshine.ndp plugin.wasm manifest.json
+```
+
+Run the tests with:
+
+```sh
+go test ./...
 ```
 
 ---
