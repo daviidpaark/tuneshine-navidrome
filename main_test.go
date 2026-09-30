@@ -2,9 +2,13 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"image"
 	"image/color"
 	"image/png"
+	"io"
+	"mime"
+	"mime/multipart"
 	"testing"
 
 	"github.com/HugoSmits86/nativewebp"
@@ -46,6 +50,109 @@ func TestConvertToWebP(t *testing.T) {
 	bounds := decoded.Bounds()
 	if bounds.Dx() != tuneshineSize || bounds.Dy() != tuneshineSize {
 		t.Errorf("expected dimensions %dx%d, got %dx%d", tuneshineSize, tuneshineSize, bounds.Dx(), bounds.Dy())
+	}
+}
+
+// parseUpload decodes a multipart POST /image request into the image part's type, its bytes, and the metadata JSON.
+func parseUpload(t *testing.T, req host.HTTPRequest) (string, []byte, map[string]string) {
+	t.Helper()
+	_, params, err := mime.ParseMediaType(req.Headers["Content-Type"])
+	if err != nil {
+		t.Fatalf("invalid Content-Type header: %v", err)
+	}
+	r := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
+	var imageType string
+	var imageData []byte
+	meta := map[string]string{}
+	for {
+		part, err := r.NextPart()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("failed to read multipart part: %v", err)
+		}
+		data, _ := io.ReadAll(part)
+		switch part.FormName() {
+		case "image":
+			imageType = part.Header.Get("Content-Type")
+			imageData = data
+		case "metadata":
+			if err := json.Unmarshal(data, &meta); err != nil {
+				t.Fatalf("invalid metadata JSON: %v", err)
+			}
+		}
+	}
+	return imageType, imageData, meta
+}
+
+func TestConvertToWebP_CenterCropsNonSquare(t *testing.T) {
+	// 128x64: red 32px side bands around a green 64x64 center
+	img := image.NewRGBA(image.Rect(0, 0, 128, 64))
+	for x := 0; x < 128; x++ {
+		for y := 0; y < 64; y++ {
+			c := color.RGBA{R: 255, A: 255}
+			if x >= 32 && x < 96 {
+				c = color.RGBA{G: 255, A: 255}
+			}
+			img.Set(x, y, c)
+		}
+	}
+	var buf bytes.Buffer
+	_ = png.Encode(&buf, img)
+
+	webpData, err := convertToWebP(buf.Bytes())
+	if err != nil {
+		t.Fatalf("convertToWebP failed: %v", err)
+	}
+	decoded, err := nativewebp.Decode(bytes.NewReader(webpData))
+	if err != nil {
+		t.Fatalf("failed to decode generated WebP: %v", err)
+	}
+	for _, x := range []int{0, tuneshineSize - 1} {
+		r, g, _, _ := decoded.At(x, 32).RGBA()
+		if r != 0 || g>>8 != 255 {
+			t.Errorf("pixel (%d,32) = r%d g%d, expected green center crop", x, r>>8, g>>8)
+		}
+	}
+}
+
+func TestDetectImageType(t *testing.T) {
+	cases := []struct {
+		data     []byte
+		mimeType string
+		ext      string
+	}{
+		{createTestPNG(4, 4), "image/png", "png"},
+		{[]byte("RIFF\x00\x00\x00\x00WEBPVP8L"), "image/webp", "webp"},
+		{[]byte("\xff\xd8\xff\xe0"), "image/jpeg", "jpg"},
+		{nil, "image/jpeg", "jpg"},
+	}
+	for _, c := range cases {
+		mimeType, ext := detectImageType(c.data)
+		if mimeType != c.mimeType || ext != c.ext {
+			t.Errorf("detectImageType(%q) = %s/%s, expected %s/%s", c.data, mimeType, ext, c.mimeType, c.ext)
+		}
+	}
+}
+
+func TestBuildMultipartBody(t *testing.T) {
+	// Image bytes containing the previous fixed boundary must survive intact
+	imageData := []byte("RIFF----TuneshineUpload\r\n--\xff\xfe binary")
+	body, contentType, err := buildMultipartBody(imageData, "image/webp", "cover.webp", []byte(`{"trackName":"Song"}`))
+	if err != nil {
+		t.Fatalf("buildMultipartBody failed: %v", err)
+	}
+
+	imageType, gotImage, meta := parseUpload(t, host.HTTPRequest{Headers: map[string]string{"Content-Type": contentType}, Body: body})
+	if imageType != "image/webp" {
+		t.Errorf("expected image/webp part, got %q", imageType)
+	}
+	if !bytes.Equal(gotImage, imageData) {
+		t.Errorf("image bytes changed in transit: %q", gotImage)
+	}
+	if meta["trackName"] != "Song" {
+		t.Errorf("expected trackName Song, got %v", meta)
 	}
 }
 
@@ -121,7 +228,12 @@ func TestNowPlaying(t *testing.T) {
 		Return("image/png", testImg, nil)
 
 	host.HTTPMock.On("Send", mock.MatchedBy(func(req host.HTTPRequest) bool {
-		return req.Method == "POST" && req.URL == "http://192.168.1.100/image"
+		if req.Method != "POST" || req.URL != "http://192.168.1.100/image" {
+			return false
+		}
+		imageType, imageData, meta := parseUpload(t, req)
+		return imageType == "image/png" && bytes.Equal(imageData, testImg) &&
+			meta["trackName"] == "Organon" && meta["albumName"] == "Untourable Album"
 	})).Return(&host.HTTPResponse{StatusCode: 200}, nil)
 
 	req := scrobbler.NowPlayingRequest{
@@ -287,4 +399,3 @@ func TestNowPlaying_Deduplication(t *testing.T) {
 	host.SubsonicAPIMock.AssertNotCalled(t, "CallRaw", mock.Anything)
 	host.HTTPMock.AssertNotCalled(t, "Send", mock.Anything)
 }
-

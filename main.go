@@ -1,6 +1,6 @@
 // Tuneshine Plugin for Navidrome
 //
-// Sends album art and album metadata to a physical Tuneshine device (Direct mode)
+// Sends album art and track metadata to a physical Tuneshine device (Direct mode)
 // or offloads processing to a Tuneshine Hub container (Hub mode).
 //
 // Capabilities: Scrobbler, SchedulerCallback
@@ -14,6 +14,8 @@ import (
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
+	"mime/multipart"
+	"net/textproto"
 	"net/url"
 	"strings"
 
@@ -84,13 +86,14 @@ func getConfig() (pluginConfig, error) {
 
 // trackMetadata is the JSON metadata sent alongside multipart image uploads.
 type trackMetadata struct {
+	TrackName   string `json:"trackName,omitempty"`
 	ArtistName  string `json:"artistName,omitempty"`
 	AlbumName   string `json:"albumName,omitempty"`
 	ServiceName string `json:"serviceName,omitempty"`
 	ItemID      string `json:"itemId,omitempty"`
 }
 
-// convertToWebP decodes an image (JPEG/PNG), resizes it to 64x64, and encodes as lossless WebP.
+// convertToWebP decodes an image (JPEG/PNG), center-crops and resizes it to 64x64, and encodes as lossless WebP.
 func convertToWebP(imageData []byte) ([]byte, error) {
 	src, _, err := image.Decode(bytes.NewReader(imageData))
 	if err != nil {
@@ -98,7 +101,7 @@ func convertToWebP(imageData []byte) ([]byte, error) {
 	}
 
 	dst := image.NewRGBA(image.Rect(0, 0, tuneshineSize, tuneshineSize))
-	draw.BiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Over, nil)
+	draw.BiLinear.Scale(dst, dst.Bounds(), src, centerSquare(src.Bounds()), draw.Over, nil)
 
 	var buf bytes.Buffer
 	if err := nativewebp.Encode(&buf, dst, nil); err != nil {
@@ -106,6 +109,29 @@ func convertToWebP(imageData []byte) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// centerSquare returns the largest centered square inside r, so non-square art is cropped instead of stretched.
+func centerSquare(r image.Rectangle) image.Rectangle {
+	w, h := r.Dx(), r.Dy()
+	if w > h {
+		x := r.Min.X + (w-h)/2
+		return image.Rect(x, r.Min.Y, x+h, r.Max.Y)
+	}
+	y := r.Min.Y + (h-w)/2
+	return image.Rect(r.Min.X, y, r.Max.X, y+w)
+}
+
+// detectImageType returns the MIME type and file extension of JPEG, PNG, or WebP data, defaulting to JPEG.
+func detectImageType(data []byte) (string, string) {
+	switch {
+	case bytes.HasPrefix(data, []byte("\x89PNG\r\n\x1a\n")):
+		return "image/png", "png"
+	case len(data) >= 12 && bytes.Equal(data[0:4], []byte("RIFF")) && bytes.Equal(data[8:12], []byte("WEBP")):
+		return "image/webp", "webp"
+	default:
+		return "image/jpeg", "jpg"
+	}
 }
 
 // imageHash computes a fast 64-bit FNV-1a hash of image data, returned as a hex string.
@@ -122,33 +148,16 @@ func postImage(imageData []byte, contentType, filename string, meta trackMetadat
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	boundary := "----TuneshineUpload"
-	var body []byte
-
-	// image field
-	body = append(body, []byte(fmt.Sprintf("--%s\r\n", boundary))...)
-	body = append(body, []byte(fmt.Sprintf("Content-Disposition: form-data; name=\"image\"; filename=\"%s\"\r\n", filename))...)
-	body = append(body, []byte(fmt.Sprintf("Content-Type: %s\r\n", contentType))...)
-	body = append(body, []byte("\r\n")...)
-	body = append(body, imageData...)
-	body = append(body, []byte("\r\n")...)
-
-	// metadata field
-	body = append(body, []byte(fmt.Sprintf("--%s\r\n", boundary))...)
-	body = append(body, []byte("Content-Disposition: form-data; name=\"metadata\"\r\n")...)
-	body = append(body, []byte("Content-Type: application/json\r\n")...)
-	body = append(body, []byte("\r\n")...)
-	body = append(body, metaJSON...)
-	body = append(body, []byte("\r\n")...)
-
-	// closing boundary
-	body = append(body, []byte(fmt.Sprintf("--%s--\r\n", boundary))...)
+	body, formContentType, err := buildMultipartBody(imageData, contentType, filename, metaJSON)
+	if err != nil {
+		return fmt.Errorf("failed to build multipart body: %w", err)
+	}
 
 	url := fmt.Sprintf("http://%s/image", deviceHost)
 	resp, err := host.HTTPSend(host.HTTPRequest{
 		Method:    "POST",
 		URL:       url,
-		Headers:   map[string]string{"Content-Type": fmt.Sprintf("multipart/form-data; boundary=%s", boundary)},
+		Headers:   map[string]string{"Content-Type": formContentType},
 		Body:      body,
 		TimeoutMs: 15000,
 	})
@@ -159,6 +168,39 @@ func postImage(imageData []byte, contentType, filename string, meta trackMetadat
 		return fmt.Errorf("POST /image returned %d: %s", resp.StatusCode, string(resp.Body))
 	}
 	return nil
+}
+
+// buildMultipartBody encodes the image and metadata fields with a random boundary.
+func buildMultipartBody(imageData []byte, contentType, filename string, metaJSON []byte) ([]byte, string, error) {
+	var buf bytes.Buffer
+	w := multipart.NewWriter(&buf)
+
+	imageHeader := make(textproto.MIMEHeader)
+	imageHeader.Set("Content-Disposition", fmt.Sprintf(`form-data; name="image"; filename="%s"`, filename))
+	imageHeader.Set("Content-Type", contentType)
+	part, err := w.CreatePart(imageHeader)
+	if err != nil {
+		return nil, "", err
+	}
+	if _, err := part.Write(imageData); err != nil {
+		return nil, "", err
+	}
+
+	metaHeader := make(textproto.MIMEHeader)
+	metaHeader.Set("Content-Disposition", `form-data; name="metadata"`)
+	metaHeader.Set("Content-Type", "application/json")
+	part, err = w.CreatePart(metaHeader)
+	if err != nil {
+		return nil, "", err
+	}
+	if _, err := part.Write(metaJSON); err != nil {
+		return nil, "", err
+	}
+
+	if err := w.Close(); err != nil {
+		return nil, "", err
+	}
+	return buf.Bytes(), w.FormDataContentType(), nil
 }
 
 // clearDisplay sends DELETE /image to the destination host to revert to the idle screen.
@@ -311,6 +353,7 @@ func uploadTrackImage(username string, track scrobbler.TrackInfo, cfg pluginConf
 	}
 
 	meta := trackMetadata{
+		TrackName:   track.Title,
 		ArtistName:  track.Artist,
 		AlbumName:   track.Album,
 		ServiceName: cfg.ServiceName,
@@ -324,8 +367,9 @@ func uploadTrackImage(username string, track scrobbler.TrackInfo, cfg pluginConf
 	if cfg.Mode == "hub" {
 		// Hub mode: pass raw image bytes directly (Hub offloads 64x64 WebP conversion)
 		uploadBytes = imageData
-		contentType = "image/jpeg"
-		filename = "cover.jpg"
+		var ext string
+		contentType, ext = detectImageType(imageData)
+		filename = "cover." + ext
 	} else {
 		// Direct mode: perform 64x64 lossless WebP conversion in plugin for physical device
 		webpData, err := convertToWebP(imageData)

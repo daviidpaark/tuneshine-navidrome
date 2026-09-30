@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.5] - 2026-09-30
+
+### Added
+
+- **Track Names:** Uploads include `trackName` again. The Hub now sends metadata-only updates for tracks that share artwork, so titles no longer go stale.
+
+### Fixed
+
+- **Multipart Boundary:** Uploads use a random boundary from `mime/multipart` instead of a fixed string that could appear inside image bytes.
+- **Hub Cover Content Type:** Hub mode labels PNG and WebP covers with their real content type instead of always `image/jpeg`.
+- **Non-Square Artwork:** Direct mode center-crops artwork to a square before resizing instead of stretching it.
+
 ## [0.4.4] - 2026-09-28
 
 ### Fixed

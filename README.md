@@ -24,7 +24,7 @@ A [Navidrome](https://www.navidrome.org/) plugin that sends album art and track 
   - **Direct to Device:** Navidrome handles 64x64 lossless WebP conversion and debouncing, then sends updates directly to a physical Tuneshine device.
   - **Tuneshine Hub:** Navidrome forwards raw cover art and metadata to a `tuneshine-hub` container, which handles image processing, debouncing, and multi-source coordination.
 - Displays 64x64 album art on the Tuneshine device when a track starts playing
-- Sends artist and album name as metadata
+- Sends track, artist, and album name as metadata
 - Clears the display when paused, stopped, or expired — with debounced handling to prevent screen flickering during seeks and track transitions
 - Skips duplicate uploads when the same track is reported again
 - Works for all Navidrome users, with an optional allowlist to restrict which users update the display
