@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.6] - 2026-09-30
+
+### Fixed
+
+- **Hub Client Slot:** Hub mode requests now send `?source=navidrome`, so Tuneshine Hub 0.2.7+ tracks Navidrome in its own slot and another client stopping no longer clears Navidrome's display. Direct mode requests are unchanged.
+
+### Removed
+
+- **Unused Image Hash:** Removed `imageHash()`, left over from the plugin-side hash suppression removed in 0.4.x.
+
 ## [0.4.5] - 2026-09-30
 
 ### Added

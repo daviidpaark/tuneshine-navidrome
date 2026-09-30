@@ -156,20 +156,12 @@ func TestBuildMultipartBody(t *testing.T) {
 	}
 }
 
-func TestImageHash(t *testing.T) {
-	img1 := createTestPNG(64, 64)
-	img2 := createTestPNG(64, 64)
-	img3 := createTestPNG(32, 32)
-
-	h1 := imageHash(img1)
-	h2 := imageHash(img2)
-	h3 := imageHash(img3)
-
-	if h1 != h2 {
-		t.Errorf("expected identical hashes for identical images, got %s vs %s", h1, h2)
+func TestImageURL(t *testing.T) {
+	if got := imageURL(pluginConfig{Mode: "hub", DeviceHost: "hub:8585"}); got != "http://hub:8585/image?source=navidrome" {
+		t.Errorf("hub mode URL = %s", got)
 	}
-	if h1 == h3 {
-		t.Errorf("expected different hashes for different images, both got %s", h1)
+	if got := imageURL(pluginConfig{Mode: "direct", DeviceHost: "192.168.1.100"}); got != "http://192.168.1.100/image" {
+		t.Errorf("direct mode URL = %s", got)
 	}
 }
 
@@ -228,7 +220,7 @@ func TestNowPlaying(t *testing.T) {
 		Return("image/png", testImg, nil)
 
 	host.HTTPMock.On("Send", mock.MatchedBy(func(req host.HTTPRequest) bool {
-		if req.Method != "POST" || req.URL != "http://192.168.1.100/image" {
+		if req.Method != "POST" || req.URL != "http://192.168.1.100/image?source=navidrome" {
 			return false
 		}
 		imageType, imageData, meta := parseUpload(t, req)

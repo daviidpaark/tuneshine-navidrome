@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"hash/fnv"
 	"image"
 	_ "image/jpeg"
 	_ "image/png"
@@ -37,6 +36,8 @@ const (
 	cacheTTLSeconds   = 3600 // 1 hour
 
 	tuneshineSize = 64 // Tuneshine display is 64x64
+
+	hubSource = "navidrome" // client id sent to Tuneshine Hub
 
 	// Scheduler constants for debounced pause-clear (Direct mode)
 	pauseClearScheduleID = "tuneshine-pause-clear"
@@ -134,15 +135,17 @@ func detectImageType(data []byte) (string, string) {
 	}
 }
 
-// imageHash computes a fast 64-bit FNV-1a hash of image data, returned as a hex string.
-func imageHash(data []byte) string {
-	h := fnv.New64a()
-	h.Write(data)
-	return fmt.Sprintf("%016x", h.Sum64())
+// imageURL returns the /image endpoint. In Hub mode it identifies the plugin so Tuneshine Hub
+// gives Navidrome its own playback slot; the physical device gets no query parameters.
+func imageURL(cfg pluginConfig) string {
+	if cfg.Mode == "hub" {
+		return fmt.Sprintf("http://%s/image?source=%s", cfg.DeviceHost, hubSource)
+	}
+	return fmt.Sprintf("http://%s/image", cfg.DeviceHost)
 }
 
 // postImage sends image bytes and metadata to the destination host (Tuneshine or Hub).
-func postImage(imageData []byte, contentType, filename string, meta trackMetadata, deviceHost string) error {
+func postImage(imageData []byte, contentType, filename string, meta trackMetadata, cfg pluginConfig) error {
 	metaJSON, err := json.Marshal(meta)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
@@ -153,7 +156,7 @@ func postImage(imageData []byte, contentType, filename string, meta trackMetadat
 		return fmt.Errorf("failed to build multipart body: %w", err)
 	}
 
-	url := fmt.Sprintf("http://%s/image", deviceHost)
+	url := imageURL(cfg)
 	resp, err := host.HTTPSend(host.HTTPRequest{
 		Method:    "POST",
 		URL:       url,
@@ -204,8 +207,8 @@ func buildMultipartBody(imageData []byte, contentType, filename string, metaJSON
 }
 
 // clearDisplay sends DELETE /image to the destination host to revert to the idle screen.
-func clearDisplay(deviceHost string) error {
-	url := fmt.Sprintf("http://%s/image", deviceHost)
+func clearDisplay(cfg pluginConfig) error {
+	url := imageURL(cfg)
 	resp, err := host.HTTPSend(host.HTTPRequest{
 		Method:    "DELETE",
 		URL:       url,
@@ -308,7 +311,7 @@ func (t *tuneshine) OnCallback(req scheduler.SchedulerCallbackRequest) error {
 		if err != nil {
 			return nil
 		}
-		return clearDisplay(cfg.DeviceHost)
+		return clearDisplay(cfg)
 	}
 	return nil
 }
@@ -381,7 +384,7 @@ func uploadTrackImage(username string, track scrobbler.TrackInfo, cfg pluginConf
 		filename = "cover.webp"
 	}
 
-	if err := postImage(uploadBytes, contentType, filename, meta, cfg.DeviceHost); err != nil {
+	if err := postImage(uploadBytes, contentType, filename, meta, cfg); err != nil {
 		return err
 	}
 
