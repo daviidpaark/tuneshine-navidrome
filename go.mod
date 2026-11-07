@@ -1,12 +1,12 @@
 module github.com/daviidpaark/tuneshine-navidrome
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/HugoSmits86/nativewebp v1.3.0
 	github.com/navidrome/navidrome/plugins/pdk/go v0.0.0-20260608122259-1b46b9771229
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/image v0.43.0
+	golang.org/x/image v0.47.0
 )
 
 require (
