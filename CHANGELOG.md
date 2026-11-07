@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.7] - 2026-11-06
+
+### Security
+
+- **WebP Decoder:** Updated `golang.org/x/image` to v0.43.0, which fixes a panic when decoding WebP images with a mismatched alpha chunk (GO-2026-5061).
+
 ## [0.4.6] - 2026-09-30
 
 ### Fixed
