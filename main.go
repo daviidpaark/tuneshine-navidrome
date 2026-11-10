@@ -33,7 +33,8 @@ const (
 	userKey        = "user"
 
 	cacheKeyLastTrack = "last-track-id"
-	cacheTTLSeconds   = 3600 // 1 hour
+	// Outlasts any track, so a pause late in a long one still finds the track it has to clear
+	cacheTTLSeconds = 86400
 
 	tuneshineSize = 64 // Tuneshine display is 64x64
 

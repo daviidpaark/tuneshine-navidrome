@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.8] - 2026-11-09
+
+### Fixed
+
+- **Long Tracks:** Pausing or stopping a track more than an hour after it started now clears the display. The plugin forgot the displayed track after an hour and ignored the pause, which in Hub mode also kept Spotify off the display.
+
 ## [0.4.7] - 2026-11-06
 
 ### Security
