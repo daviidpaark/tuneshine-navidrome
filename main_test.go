@@ -213,10 +213,10 @@ func TestNowPlaying(t *testing.T) {
 
 	host.SchedulerMock.On("CancelSchedule", pauseClearScheduleID).Return(nil)
 	host.CacheMock.On("GetString", cacheKeyLastTrack).Return("", false, nil)
-	host.CacheMock.On("SetString", cacheKeyLastTrack, "track-123", int64(cacheTTLSeconds)).Return(nil)
+	host.CacheMock.On("SetString", cacheKeyLastTrack, "track&123/a b", int64(cacheTTLSeconds)).Return(nil)
 
 	testImg := createTestPNG(64, 64)
-	host.SubsonicAPIMock.On("CallRaw", "/getCoverArt?u=test+user%26name&id=track-123&size=300").
+	host.SubsonicAPIMock.On("CallRaw", "/getCoverArt?u=test+user%26name&id=track%26123%2Fa+b&size=300").
 		Return("image/png", testImg, nil)
 
 	host.HTTPMock.On("Send", mock.MatchedBy(func(req host.HTTPRequest) bool {
@@ -231,7 +231,7 @@ func TestNowPlaying(t *testing.T) {
 	req := scrobbler.NowPlayingRequest{
 		Username: "test user&name",
 		Track: scrobbler.TrackInfo{
-			ID:     "track-123",
+			ID:     "track&123/a b",
 			Title:  "Organon",
 			Artist: "Men I Trust",
 			Album:  "Untourable Album",

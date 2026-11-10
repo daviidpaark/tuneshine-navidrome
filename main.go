@@ -350,7 +350,7 @@ func uploadTrackImage(username string, track scrobbler.TrackInfo, cfg pluginConf
 	}
 
 	_, imageData, err := host.SubsonicAPICallRaw(
-		fmt.Sprintf("/getCoverArt?u=%s&id=%s&size=%d", url.QueryEscape(username), track.ID, sizeHint),
+		fmt.Sprintf("/getCoverArt?u=%s&id=%s&size=%d", url.QueryEscape(username), url.QueryEscape(track.ID), sizeHint),
 	)
 	if err != nil {
 		return fmt.Errorf("failed to fetch artwork: %w", err)

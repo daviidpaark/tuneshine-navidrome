@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.9] - 2026-11-09
+
+### Fixed
+
+- **Track IDs:** The track ID is URL-escaped in the cover art request, as the username already was.
+
+### Changed
+
+- Updated `golang.org/x/image` to v0.47.0 and `github.com/stretchr/testify` to v1.12.1. `golang.org/x/image` now needs Go 1.26, so `go.mod` requires it.
+
 ## [0.4.8] - 2026-11-09
 
 ### Fixed
