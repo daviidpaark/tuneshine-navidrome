@@ -93,6 +93,8 @@ type trackMetadata struct {
 	AlbumName   string `json:"albumName,omitempty"`
 	ServiceName string `json:"serviceName,omitempty"`
 	ItemID      string `json:"itemId,omitempty"`
+	// Always false: hold artwork during the device's scheduled sleep instead of lighting the display
+	ShowDuringSleep bool `json:"showDuringSleep"`
 }
 
 // convertToWebP decodes an image (JPEG/PNG), center-crops and resizes it to 64x64, and encodes as lossless WebP.

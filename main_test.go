@@ -54,7 +54,7 @@ func TestConvertToWebP(t *testing.T) {
 }
 
 // parseUpload decodes a multipart POST /image request into the image part's type, its bytes, and the metadata JSON.
-func parseUpload(t *testing.T, req host.HTTPRequest) (string, []byte, map[string]string) {
+func parseUpload(t *testing.T, req host.HTTPRequest) (string, []byte, map[string]any) {
 	t.Helper()
 	_, params, err := mime.ParseMediaType(req.Headers["Content-Type"])
 	if err != nil {
@@ -63,7 +63,7 @@ func parseUpload(t *testing.T, req host.HTTPRequest) (string, []byte, map[string
 	r := multipart.NewReader(bytes.NewReader(req.Body), params["boundary"])
 	var imageType string
 	var imageData []byte
-	meta := map[string]string{}
+	meta := map[string]any{}
 	for {
 		part, err := r.NextPart()
 		if err == io.EOF {
@@ -225,7 +225,8 @@ func TestNowPlaying(t *testing.T) {
 		}
 		imageType, imageData, meta := parseUpload(t, req)
 		return imageType == "image/png" && bytes.Equal(imageData, testImg) &&
-			meta["trackName"] == "Organon" && meta["albumName"] == "Untourable Album"
+			meta["trackName"] == "Organon" && meta["albumName"] == "Untourable Album" &&
+			meta["showDuringSleep"] == false
 	})).Return(&host.HTTPResponse{StatusCode: 200}, nil)
 
 	req := scrobbler.NowPlayingRequest{

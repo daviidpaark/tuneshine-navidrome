@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.4.10] - 2026-11-11
+
+### Fixed
+
+- **Sleep schedule:** Uploads ask the device to hold artwork during its scheduled sleep (`showDuringSleep: false`) and show it when sleep ends, instead of lighting the display.
+
 ## [0.4.9] - 2026-11-09
 
 ### Fixed
